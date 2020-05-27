@@ -130,6 +130,13 @@ def deploy(c, namespace=None, digest=None, wait=True):
     c.run(cmd, echo=True)
 
 
+@task
+def status(c, namespace=None):
+    namespace = namespace or c.helm.namespace
+    release = c.helm.release + (f'-{namespace}' if namespace else '')
+    c.run(f'helm status {release}')
+
+
 def get_deployer(c):
     return environ.get('BUILDKITE_UNBLOCKER') or git_command(c, 'config --get user.name')[:-1]
 
