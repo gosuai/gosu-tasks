@@ -1,7 +1,7 @@
 import logging
 import sys
 import webbrowser
-from os import environ
+from os import environ, path
 from textwrap import dedent
 
 import git
@@ -97,7 +97,7 @@ def open_ci(c, repo=None):
 
 
 @task
-def deploy(c, namespace=None, digest=None, wait=True):
+def deploy(c, namespace=None, digest=None, wait=True, set_=[]):
     commit = get_current_commit(c)
     if not digest:
         if 'DIGEST' in environ:
@@ -123,18 +123,38 @@ def deploy(c, namespace=None, digest=None, wait=True):
     args['image.digest'] = digest
     args['author.name'] = author_name
     args['author.email'] = author_email
+    for arg in set_:
+        key, value = arg.split('=')
+        args[key] = value
+
     args_str = ''.join(f" --set '{key}={value}'" for key, value in args.items())
     namespace = namespace or c.helm.namespace
-    release = c.helm.release + (f'-{namespace}' if namespace else '')
+    release = get_release(c, namespace)
+    if path.isfile(f'{namespace}.yaml'):
+        args_str += f' --values {namespace}.yaml'
     cmd = f'helm upgrade -i --namespace={namespace} {args_str} {release} ./chart'
     c.run(cmd, echo=True)
 
 
+def get_release(c, namespace):
+    namespace = namespace or c.helm.namespace
+    return c.helm.release + (f'-{namespace}' if namespace else '')
+
+
 @task
 def status(c, namespace=None):
+    c.run(f'helm status {get_release(c, namespace)}')
+
+
+@task
+def delete(c, namespace=None):
+    c.run(f'helm delete --purge {get_release(c, namespace)}')
+
+
+@task
+def logs(c, namespace=None):
     namespace = namespace or c.helm.namespace
-    release = c.helm.release + (f'-{namespace}' if namespace else '')
-    c.run(f'helm status {release}')
+    c.run(f'kubectl -n {namespace} logs -f --max-log-requests=30 --timestamps -l app={c.helm.release}')
 
 
 def get_deployer(c):
