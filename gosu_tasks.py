@@ -97,7 +97,7 @@ def open_ci(c, repo=None):
 
 
 @task
-def deploy(c, digest=None, wait=True):
+def deploy(c, namespace=None, digest=None, wait=True):
     commit = get_current_commit(c)
     if not digest:
         if 'DIGEST' in environ:
@@ -124,7 +124,9 @@ def deploy(c, digest=None, wait=True):
     args['author.name'] = author_name
     args['author.email'] = author_email
     args_str = ''.join(f" --set '{key}={value}'" for key, value in args.items())
-    cmd = f'helm upgrade -i --namespace={c.helm.namespace} {args_str} {c.helm.release} ./chart'
+    namespace = namespace or c.helm.namespace
+    release = c.helm.release + (f'-{namespace}' if namespace else '')
+    cmd = f'helm upgrade -i --namespace={namespace} {args_str} {release} ./chart'
     c.run(cmd, echo=True)
 
 
