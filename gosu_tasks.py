@@ -132,7 +132,7 @@ def deploy(c, namespace=None, digest=None, wait=True, set_=[]):
     release = get_release(c, namespace)
     if path.isfile(f'{namespace}.yaml'):
         args_str += f' --values {namespace}.yaml'
-    cmd = f'helm upgrade -i --namespace={namespace} {args_str} {release} ./chart'
+    cmd = f'helm2 upgrade -i --namespace={namespace} {args_str} {release} ./chart'
     c.run(cmd, echo=True)
 
 
@@ -143,12 +143,12 @@ def get_release(c, namespace):
 
 @task
 def status(c, namespace=None):
-    c.run(f'helm status {get_release(c, namespace)}')
+    c.run(f'helm2 status {get_release(c, namespace)}')
 
 
 @task
 def delete(c, namespace=None):
-    c.run(f'helm delete --purge {get_release(c, namespace)}')
+    c.run(f'helm2 delete --purge {get_release(c, namespace)}')
 
 
 @task
